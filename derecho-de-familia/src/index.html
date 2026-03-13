@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexMaster 100 ⚖️</title>
+    <style>
+        :root { --p: #1e40af; --s: #10b981; --d: #e11d48; --bg: #0f172a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 10px; margin: 0; }
+        .card { background: #ffffff; width: 100%; max-width: 480px; border-radius: 20px; padding: 15px; box-shadow: 0 20px 25px rgba(0,0,0,0.5); }
+        .header { background: var(--p); color: white; padding: 12px; border-radius: 15px; text-align: center; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; background: #f1f5f9; padding: 10px; border-radius: 10px; font-weight: bold; font-size: 0.85em; }
+        .btn { display: block; width: 100%; padding: 10px; margin: 5px 0; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85em; text-align: left; }
+        .btn:hover { border-color: var(--p); background: #f0f7ff; }
+        #feedback { margin-top: 10px; padding: 10px; border-radius: 10px; display: none; font-size: 0.8em; line-height: 1.4; }
+        #next-btn { background: var(--s); color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; cursor: pointer; display: none; margin-top: 10px; font-weight: bold; }
+        .progress-bar { width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; margin: 5px 0; }
+        #p-fill { height: 100%; background: var(--s); width: 0%; transition: 0.2s; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header"><h3 style="margin:0">LexMaster: 100 Desafíos ⚖️</h3></div>
+        <div class="progress-bar"><div id="p-fill"></div></div>
+        <div class="stats">
+            <div>⭐ XP: <span id="xp">0</span></div>
+            <div>❤️ Vidas: <span id="lives">7</span></div>
+            <div style="grid-column: span 2; text-align: center; font-size: 0.8em;">Pregunta <span id="cur-n">1</span> de 100</div>
+        </div>
+        <div id="quiz-box">
+            <p id="q-text" style="font-weight: 600; color: #0f172a; margin: 10px 0;"></p>
+            <div id="options"></div>
+            <div id="feedback"></div>
+            <button id="next-btn" onclick="handleNext()">Continuar ➔</button>
+        </div>
+    </div>
+
+<script>
+    const questions = [
+        // 1-10: Conceptos y Familia
+        { q: "¿Qué rige el Derecho de Familia según su concepto?", a: ["Constitución y disolución familiar", "Derecho comercial", "Tránsito"], c: 0, i: "Rige la constitución, organización y disolución de la familia." },
+        { q: "¿Cómo se establece constitucionalmente a la familia?", a: ["Acuerdo privado", "Elemento natural y fundamental de la sociedad", "Gremio"], c: 1, i: "Es el elemento natural y fundamental de la sociedad." },
+        { q: "¿Cuál es la función de la protección a la familia?", a: ["Función social", "Función bancaria", "Función política"], c: 0, i: "Se hace en atención a los individuos, cumpliendo su función social." },
+        { q: "¿Por qué vínculos se une la institución familiar?", a: ["Solo sangre", "Sangre e intereses económicos/religiosos", "Solo contratos"], c: 1, i: "Unidos por sangre e intereses económicos, religiosos o de ayuda." },
+        { q: "¿Qué es el parentesco?", a: ["Amistad", "Relación por consanguinidad, afinidad o adopción", "Vínculo laboral"], c: 1, i: "Relación entre personas unidas por lazos de consanguinidad, afinidad o adopción." },
+        { q: "¿Qué genera la filiación entre padres e hijos?", a: ["Solo apellidos", "Derechos y obligaciones", "Deudas"], c: 1, i: "Relación jurídico familiar que genera derechos y obligaciones." },
+        { q: "¿Qué es la filiación voluntaria?", a: ["Por juez", "Por voluntad de ambos progenitores", "Por indicación de uno"], c: 1, i: "Realizada por voluntad de ambos progenitores." },
+        { q: "¿Qué es la filiación por indicación?", a: ["Decisión de un tío", "Un progenitor registra e indica la otra paternidad", "Firma el juez"], c: 1, i: "El padre o la madre registra e indicará la paternidad/maternidad." },
+        { q: "¿Cómo se realiza la filiación judicial?", a: ["Ante notario", "Mediante autoridad judicial", "En el hospital"], c: 1, i: "Es la que se realiza mediante una autoridad judicial." },
+        { q: "¿Con qué documento se acredita la filiación?", a: ["Certificado de bautizo", "Certificado de nacimiento", "Cédula de identidad"], c: 1, i: "Se acredita con el certificado de nacimiento." },
+        
+        // 11-20: Filiación y Acción de Negación
+        { q: "¿Qué artículo de la CPE establece la presunción de filiación?", a: ["Art. 1", "Art. 65", "Art. 100"], c: 1, i: "Artículo 65 de la C.P.E." },
+        { q: "¿A quién corresponde la prueba en contrario de la presunción?", a: ["A la madre", "A quien niegue la filiación", "Al Estado"], c: 1, i: "La presunción es válida salvo prueba en contrario de quien la niegue." },
+        { q: "¿Quién paga los gastos si la prueba niega la presunción?", a: ["El demandado", "Quien indicó la filiación", "El juez"], c: 1, i: "Los gastos corresponderán a quien haya indicado la filiación." },
+        { q: "¿Cuál es el plazo máximo para negar paternidad tras saber del registro?", a: ["3 meses", "6 meses", "1 año"], c: 1, i: "Plazo máximo de seis (6) meses." },
+        { q: "¿Plazo para negar una filiación errónea (Art. 18)?", a: ["1 año", "2 años", "5 años"], c: 2, i: "Término de cinco (5) años computable desde la inscripción." },
+        { q: "¿Dónde se computan los 5 años por filiación errónea?", a: ["Desde el nacimiento", "Desde la inscripción en el SERECI", "Desde el divorcio"], c: 1, i: "Computable desde la inscripción en el Servicio de Registro Cívico." },
+        { q: "¿Quién puede impugnar la filiación (Art. 20)?", a: ["Solo el padre", "El interesado, representante o tutor", "Cualquier vecino"], c: 1, i: "La o el interesado, su representado o quien ejerce la tutela." },
+        { q: "¿Qué dice el Art. 22 de la Ley 603 sobre la impugnación?", a: ["Prescribe en 1 mes", "Es imprescriptible", "Dura 10 años"], c: 1, i: "Imprescriptibilidad de la acción de impugnación." },
+        { q: "¿Cuál es el objeto de la Ley 548?", a: ["Cobrar impuestos", "Reconocer y regular derechos de la niñez", "Solo castigar"], c: 1, i: "Reconocer, desarrollar y regular el ejercicio de los derechos de la niña/o." },
+        { q: "¿Qué sistema implementa la Ley 548 para garantizar derechos?", a: ["Sindicato", "SIPPROINA", "Sistema Judicial Único"], c: 1, i: "Implementa el Sistema Plurinacional Integral de la Niña, Niño y Adolescente." },
+
+        // 21-30: SIPPROINA y Jurisdicción
+        { q: "¿Quién tiene la corresponsabilidad de los derechos de la niñez?", a: ["Solo los padres", "Estado, familia y sociedad", "Solo la policía"], c: 1, i: "Corresponsabilidad del Estado, la familia y la sociedad." },
+        { q: "¿Qué integra el SIPPROINA según el Art. 159?", a: ["Solo el Ministerio de Salud", "Conjunto de órganos e instituciones", "Solo abogados"], c: 1, i: "Conjunto articulado de órganos, instancias e instituciones." },
+        { q: "¿Qué plan ejecuta el SIPPROINA?", a: ["Plan de vivienda", "Plan Plurinacional de la Niña, Niño y Adolescente", "Plan de salud"], c: 1, i: "Ejecutará el Plan Plurinacional de la Niña, Niño y Adolescente." },
+        { q: "¿Quién es el primer integrante del SIPPROINA (Art. 161)?", a: ["Alcaldía", "Ministerio de Justicia", "Defensor del Pueblo"], c: 1, i: "Literal a) El Ministerio de Justicia." },
+        { q: "¿Qué instancia departamental integra el sistema?", a: ["Gobernación", "Instancia Técnica Departamental de Política Social", "Cámara de Comercio"], c: 1, i: "Literal d) La Instancia Técnica Departamental de Política Social." },
+        { q: "¿Qué autoridades indígenas son parte del SIPPROINA?", a: ["Ninguna", "Autoridades de naciones indígena originario campesinas", "Solo capitanes"], c: 1, i: "Literal h) Autoridades de las naciones y pueblos indígena originario campesinas." },
+        { q: "¿Qué ministerio de empleo integra el sistema?", a: ["Min. de Hacienda", "Min. de Trabajo, Empleo y Previsión Social", "Min. de Gobierno"], c: 1, i: "Literal k) El Ministerio del Trabajo, Empleo y Previsión Social." },
+        { q: "¿Qué es la Jurisdicción según la Ley 025?", a: ["Territorio", "Potestad del Estado de administrar justicia", "Una sentencia"], c: 1, i: "Es la potestad que tiene el Estado Plurinacional de administrar justicia." },
+        { q: "¿De dónde emana la Jurisdicción?", a: ["Del Presidente", "Del pueblo boliviano", "De los abogados"], c: 1, i: "Emana del pueblo boliviano y se ejerce por autoridades jurisdiccionales." },
+        { q: "¿Qué es la Competencia?", a: ["Un juicio", "Facultad de una autoridad para ejercer jurisdicción en un asunto", "Un recurso"], c: 1, i: "Facultad de una autoridad para ejercer la jurisdicción en un asunto determinado." },
+
+        // 31-40: Órganos Jurisdiccionales y Niñez
+        { q: "¿Qué tribunal es el máximo en la jurisdicción ordinaria?", a: ["Consejo de la Magistratura", "Tribunal Supremo de Justicia", "Tribunal Local"], c: 1, i: "Tribunal Supremo de Justicia." },
+        { q: "¿Qué juez ejerce jurisdicción según el Art. 198 (Ley 548)?", a: ["Juez de Paz", "Jueza o Juez Público en materia de Niñez", "Juez Penal"], c: 1, i: "La Jueza o el Juez Público en materia de Niñez y Adolescencia." },
+        { q: "¿Cuál es el ámbito territorial del juez de niñez?", a: ["Todo el país", "Donde fue designado/a", "Solo ciudades capitales"], c: 1, i: "Será competente en el ámbito territorial al que fue designado o designada." },
+        { q: "¿Qué medida aplica el Juez de Niñez (Art. 207)?", a: ["Solo cárcel", "Medidas cautelares, protección y sanciones", "Solo multas"], c: 1, i: "Aplicar medidas cautelares, condicionales, de protección y sanciones." },
+        { q: "¿Puede el Juez de Niñez resolver la filiación judicial?", a: ["No, es para familia", "Sí, en el marco del Art. 111 del Código", "Solo ante notario"], c: 1, i: "Conocer y resolver la filiación judicial." },
+        { q: "¿Qué solicitudes resuelve sobre la autoridad materna/paterna?", a: ["Suspensión solamente", "Restitución de la autoridad", "Solo herencias"], c: 1, i: "Conocer y resolver solicitudes de restitución de la autoridad." },
+        { q: "¿Bajo qué convención resuelve la restitución internacional?", a: ["Convención de Derechos Humanos", "Convención Interamericana sobre Restitución Internacional", "Pacto de San José"], c: 1, i: "Conforme a la Convención Interamericana sobre Restitución Internacional de Menores." },
+        { q: "¿Qué procesos resuelve el Juez de Niñez según el inciso f)?", a: ["Solo divorcios", "Tutela ordinaria y guarda", "Venta de casas"], c: 1, i: "Conocer y resolver procesos de tutela ordinaria y guarda." },
+        { q: "¿Qué juzgado es el competente en materia familiar?", a: ["Juzgado Público de Familia", "Juzgado de Instrucción", "Fiscalía"], c: 0, i: "Juzgados Públicos en materia Familiar." },
+        { q: "¿Cuál es el primer paso en las partes del proceso?", a: ["Citación", "Demanda", "Sentencia"], c: 1, i: "Partes: Demanda, Admisión, Citación, Contestación, Audiencia, Sentencia." },
+
+        // 41-50: Familia Sustituta y Asistencia Familiar
+        { q: "¿Qué carácter tiene la Familia Sustituta?", a: ["Permanente obligatoria", "Temporal (Art. 51-52)", "Solo de fin de semana"], c: 1, i: "Es una figura con carácter temporal desarrollada en los artículos 51 a 52." },
+        { q: "¿Cómo debe actuar la Familia Sustituta respecto al menor?", a: ["Como amigos", "Con deberes de padres", "Como tutores de dinero"], c: 1, i: "Deberá actuar con los deberes de padres del infante o adolescente." },
+        { q: "¿Quién decide la inserción en familia sustituta?", a: ["El policía", "Decisión judicial del Juez", "La vecina"], c: 1, i: "Esta figura se efectúa por decisión judicial." },
+        { q: "¿Qué debe tomar en cuenta el Juez antes de decidir la familia sustituta?", a: ["Opinión del niño/a", "Solo el dinero", "Color de piel"], c: 0, i: "El Juez debe tomar en cuenta las opiniones del niño, niña o adolescente." },
+        { q: "¿En qué se divide la familia sustituta?", a: ["Padre y madre", "Guarda, Adopción y Tutela", "Alimento y techo"], c: 1, i: "Se divide en Guarda, Adopción y Tutela." },
+        { q: "¿Qué comprende la Asistencia Familiar?", a: ["Solo comida", "Alimento, salud, educación, vivienda, recreación y vestimenta", "Solo ropa"], c: 1, i: "Recursos que garantizan lo indispensable (alimentación, salud, vivienda, etc.)." },
+        { q: "¿Cuándo es exigible judicialmente la asistencia?", a: ["Siempre", "Cuando no se la presta voluntariamente", "Solo tras 1 año"], c: 1, i: "Exigible judicialmente cuando no se la presta voluntariamente." },
+        { q: "¿Qué interés se prioriza en la asistencia?", a: ["Interés de los abuelos", "Interés superior de niñas, niños y adolescentes", "Interés del padre"], c: 1, i: "Se priorizará el interés superior de niñas, niños y adolescentes." },
+        { q: "¿Quiénes son los primeros obligados tras los padres?", a: ["Vecinos", "Cónyuge y Abuelos", "Estado"], c: 1, i: "Obligados: Cónyuge, Madre/Padre, Abuelos, Hermanos, Hijos, Nietos." },
+        { q: "¿En proporción a qué se determina la asistencia (Art. 116)?", a: ["Al salario mínimo", "Necesidades del beneficiario y recursos del obligado", "Solo al azar"], c: 1, i: "En proporción a las necesidades de la persona beneficiaria y recursos del obligado." },
+
+        // 51-60: Asistencia Familiar (Continuación)
+        { q: "¿Cómo puede fijar el juez el monto (Art. 116.II)?", a: ["Solo efectivo", "Monto fijo o porcentual", "Solo en víveres"], c: 1, i: "La autoridad fijará la asistencia en un monto fijo o porcentual." },
+        { q: "¿Cómo se aprecia la capacidad de otorgar asistencia?", a: ["Solo por lo que dice", "Forma integral (boletas, impuestos, acreditaciones)", "Solo por su casa"], c: 1, i: "Apreciada en forma integral de medios que demuestren sus ingresos." },
+        { q: "¿Cuál es el monto mínimo si se gana el salario mínimo?", a: ["10% del mínimo", "20% del salario mínimo nacional", "50% del mínimo"], c: 1, i: "El monto calificado no podrá ser menor al 20% del salario mínimo nacional." },
+        { q: "¿Qué pasa con el monto si hay más de un beneficiario?", a: ["Se divide el 20%", "Se incrementará de acuerdo a necesidades", "Se queda igual"], c: 1, i: "Se incrementará si existiere más de una beneficiaria o beneficiario." },
+        { q: "¿Qué significa que la asistencia es inembargable?", a: ["Que no se puede cobrar", "Que no se puede quitar por deudas", "Que no tiene fin"], c: 1, i: "Caracteres: Irrenunciable, Inembargable e Intransferible." },
+        { q: "¿Cuándo cesa la obligación si el obligado no puede cumplir?", a: ["Se cancela", "Pasa a la siguiente persona en orden", "Va a la cárcel directo"], c: 1, i: "Pasa a la siguiente persona en orden para cumplirla." },
+        { q: "¿Cesa la obligación por indignidad?", a: ["No, nunca", "Sí, si el beneficiario incurre en causa de indignidad", "Solo en divorcio"], c: 1, i: "Cesa cuando beneficiarios incurran en causa de indignidad." },
+        { q: "¿Cesa la asistencia si se prueba la negación de filiación?", a: ["No afecta", "Sí, cesa la obligación", "Solo si el juez quiere"], c: 1, i: "Cesa cuando se haya declarado judicialmente probada la negación de filiación." },
+        { q: "¿Qué objeto tiene la Guarda (Art. 57)?", a: ["Adopción rápida", "Cuidado, protección y asistencia integral provisional", "Herencia"], c: 1, i: "Objeto: cuidado, protección, atención y asistencia con carácter provisional." },
+        { q: "¿A quiénes se otorga la Guarda por Resolución Judicial?", a: ["Solo a tíos", "Madre, padre o terceras personas", "Solo al Estado"], c: 1, i: "Otorgada a la madre o al padre... o a terceras personas." },
+
+        // 61-70: Guarda, Tutela y Adopción
+        { q: "¿Afecta la guarda la autoridad materna o paterna?", a: ["Sí, la anula", "No la afecta", "Solo en el nombre"], c: 1, i: "Otorgada... sin afectar la autoridad materna o paterna." },
+        { q: "¿Qué es la guarda por desvinculación familiar?", a: ["Por muerte", "La otorgada tras divorcio o separación", "Por viaje"], c: 1, i: "Clases de Guarda: Por desvinculación familiar." },
+        { q: "¿Quién otorga la guarda a quien no tiene tuición legal?", a: ["El policía", "La Jueza o Juez de Niñez y Adolescencia", "El abogado"], c: 1, i: "Otorgada por el Juez de Niñez a persona que no tiene tuición legal." },
+        { q: "¿Para quiénes se crea la Tutela?", a: ["Para adultos", "Menores no sometidos a patria potestad ni emancipados", "Solo para huérfanos"], c: 1, i: "Protección de menores no sometidos a patria potestad ni emancipados." },
+        { q: "¿De dónde vienen los antecedentes de la Tutela?", a: ["Derecho Moderno", "Derecho Romano (Tutela y Curatela)", "Derecho Penal"], c: 1, i: "Derecho Romano diferenciaba la tutela de la curatela." },
+        { q: "¿Quién desempeña la Tutela?", a: ["El Juez", "La o el Tutor", "El Notario"], c: 1, i: "Se desempeña por la Tutora - Tutor." },
+        { q: "¿Bajo qué ley se regula la Tutela?", a: ["Ley 548", "Ley 603", "Código Civil"], c: 1, i: "La Tutela se regula mediante la Ley No. 603." },
+        { q: "¿Qué calidad adquiere el adoptado respecto al adoptante?", a: ["Sobrino", "Hija o hijo", "Tutelado"], c: 1, i: "Adquiere la calidad de hija o hijo de la o el adoptante." },
+        { q: "¿Qué carácter tiene la adopción?", a: ["Temporal", "Estable, permanente y definitiva", "Reversible"], c: 1, i: "Es estable, permanente y definitiva." },
+        { q: "¿En función de qué interés se establece la adopción?", a: ["Interés de los padres", "Interés superior de la adoptada o adoptado", "Interés del Estado"], c: 1, i: "Establecida en función del interés superior de la adoptada o adoptado." },
+
+        // 71-80: Requisitos de Adopción
+        { q: "¿Cuál es la edad mínima para ser adoptante (Art. 84)?", a: ["18 años", "21 años", "25 años"], c: 2, i: "Tener un mínimo de veinticinco (25) años de edad." },
+        { q: "¿Cuántos años mayor debe ser el adoptante que el niño/a?", a: ["10 años", "15 años", "18 años"], c: 2, i: "Ser por lo menos dieciocho (18) años mayor." },
+        { q: "¿Cuál es la edad máxima para parejas casadas (al menos uno)?", a: ["40 años", "50 años", "60 años"], c: 2, i: "Por lo menos uno debe tener menos de sesenta (60) años." },
+        { q: "¿Qué plazo de convivencia pre-adoptiva permite obviar el límite de edad?", a: ["6 meses", "1 año", "2 años"], c: 1, i: "Salvo si existiera convivencia pre-adoptiva por espacio de un (1) año." },
+        { q: "¿Cómo se acredita la salud de los adoptantes?", a: ["Declaración jurada", "Certificado médico y evaluación psicológica", "Solo foto"], c: 1, i: "Buena salud física y mental mediante certificado y evaluación." },
+        { q: "¿Sobre qué delitos no debe tener antecedentes el adoptante?", a: ["Leves", "Delitos dolosos", "Infracciones de tráfico"], c: 1, i: "Certificado de no tener antecedentes penales por delitos dolosos." },
+        { q: "¿Qué certificado de idoneidad se requiere?", a: ["Social", "Certificado de idoneidad", "Laboral"], c: 1, i: "Literal j) Certificado de idoneidad." },
+        { q: "¿Qué nacionalidad debe tener el adoptado (Art. 85)?", a: ["Cualquiera", "Boliviana y residir en el país", "Solo extranjera"], c: 1, i: "Tener nacionalidad boliviana y residir en el país." },
+        { q: "¿Hasta qué edad se puede ser adoptado (como regla)?", a: ["12 años", "Menos de 18 años a la fecha de demanda", "Hasta los 21"], c: 1, i: "Tener menos de dieciocho (18) años a la fecha de la demanda." },
+        { q: "¿Qué resolución judicial se requiere para el adoptado?", a: ["Sentencia de divorcio", "Extinción de autoridad o Filiación Judicial", "Sentencia penal"], c: 1, i: "Resolución Judicial sobre la extinción de autoridad o Filiación Judicial." },
+
+        // 81-90: Divorcio y Bienes
+        { q: "¿Qué es el Divorcio según el concepto?", a: ["Un contrato", "Forma de extinguir el matrimonio civil", "Una sanción"], c: 1, i: "Forma de extinguir el matrimonio civil o desvinculación judicial." },
+        { q: "¿Quiénes pueden interponer la acción de divorcio?", a: ["Solo el marido", "Cónyuge o ambos (personal o por representante)", "Solo el fiscal"], c: 1, i: "La o el cónyuge o por ambos, por sí o por representante." },
+        { q: "¿Cuáles son las dos clases de divorcio?", a: ["Privado y Público", "Judicial y Notarial", "Nacional e Internacional"], c: 1, i: "Clases: Judicial y Notarial." },
+        { q: "¿Dónde se tramita el divorcio judicial?", a: ["Notaría", "Juzgado Público de Familia", "Alcaldía"], c: 1, i: "Tramitado en el Juzgado Público de Familia." },
+        { q: "¿Dónde se tramita el divorcio notarial?", a: ["Juzgado", "Notarías de Fe Pública", "Policía"], c: 1, i: "Tramitado en las Notarías de Fe Pública." },
+        { q: "¿Cuál es el último paso del proceso de divorcio?", a: ["Sentencia", "Ejecutoria de la sentencia", "Citación"], c: 1, i: "Último paso: Ejecutoria de la sentencia." },
+        { q: "¿Qué es la división y partición de bienes?", a: ["Venta forzosa", "Extinguir la copropiedad de bienes gananciales", "Regalo"], c: 1, i: "Acción dirigida a extinguir la copropiedad de bienes de quienes fueron cónyuges." },
+        { q: "¿Qué tipo de acto implica la división de bienes?", a: ["Contrato de trabajo", "Acto traslativo de dominio", "Promesa"], c: 1, i: "Implica un acto traslativo de dominio convencional o judicial." },
+        { q: "¿Cuándo puede proceder la división de bienes?", a: ["Solo antes del juicio", "En la ejecución de sentencia de divorcio", "Solo tras 10 años"], c: 1, i: "Puede proceder en la ejecución de la sentencia de divorcio." },
+        { q: "¿Qué proceso se usa para la nulidad de matrimonio (Art. 421)?", a: ["Extraordinario", "Proceso Ordinario", "Resolución Inmediata"], c: 1, i: "Se tramitarán conforme al proceso ordinario: Nulidad de matrimonio." },
+
+        // 91-100: Procesos (Ordinario, Extraordinario, Inmediato)
+        { q: "¿Cómo se tramita la división de bienes fuera del divorcio?", a: ["Extraordinario", "Proceso Ordinario", "Notarial obligatorio"], c: 1, i: "Proceso ordinario: División y partición... cuando no se lo tramite en ejecución." },
+        { q: "¿Qué proceso corresponde a la Filiación (Art. 434)?", a: ["Ordinario", "Proceso Extraordinario", "Resolución Inmediata"], c: 1, i: "Proceso extraordinario: Declaración judicial de filiación." },
+        { q: "¿Cómo se tramita la negación de maternidad o paternidad?", a: ["Ordinario", "Proceso Extraordinario", "Inmediato"], c: 1, i: "Se tramitarán en proceso extraordinario: Negación de maternidad o paternidad." },
+        { q: "¿Qué proceso corresponde a la Declaración de Interdicción?", a: ["Ordinario", "Proceso Extraordinario", "Privado"], c: 1, i: "Art. 434.g) Proceso extraordinario." },
+        { q: "¿Cómo se tramita la suspensión de autoridad de padre/madre?", a: ["Ordinario", "Proceso Extraordinario", "Resolución Inmediata"], c: 1, i: "Art. 434.i) Proceso extraordinario." },
+        { q: "¿Qué pretensión es de Resolución Inmediata (Art. 445)?", a: ["Divorcio", "Emancipación por desacuerdo", "Nulidad"], c: 1, i: "Resolución inmediata: Emancipación por desacuerdo." },
+        { q: "¿Cómo se tramita la Constitución de Patrimonio Familiar?", a: ["Extraordinario", "Resolución Inmediata", "Ordinario"], c: 1, i: "Art. 445.b) Resolución inmediata." },
+        { q: "¿Qué sucede con el Desacuerdo de los Padres según el Art. 445?", a: ["Va a juicio ordinario", "Resolución Inmediata", "No se resuelve"], c: 1, i: "Resolución inmediata: Desacuerdo de los padres." },
+        { q: "¿Cómo se tramita la Asistencia Familiar cuando hay acuerdo?", a: ["Extraordinario", "Resolución Inmediata", "Ordinario"], c: 1, i: "Resolución inmediata: Asistencia familiar cuando exista acuerdo." },
+        { q: "¿Qué rige el cumplimiento de acuerdos?", a: ["Proceso Extraordinario", "Resolución Inmediata", "Es voluntario solamente"], c: 1, i: "Art. 445.f) Resolución inmediata: Cumplimiento de acuerdos." }
+    ];
+
+    let cur = 0, xp = 0, lives = 3;
+
+    function render() {
+        const item = questions[cur];
+        document.getElementById('q-text').innerText = item.q;
+        document.getElementById('cur-n').innerText = cur + 1;
+        document.getElementById('p-fill').style.width = (cur + 1) + "%";
+        
+        const optC = document.getElementById('options');
+        optC.innerHTML = '';
+        document.getElementById('feedback').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+
+        item.a.forEach((t, i) => {
+            const b = document.createElement('button');
+            b.innerText = t; b.className = 'btn';
+            b.onclick = () => {
+                const f = document.getElementById('feedback');
+                const all = document.querySelectorAll('.btn');
+                all.forEach(x => x.disabled = true);
+                if(i === item.c) {
+                    xp += 100;
+                    f.innerHTML = "✅ " + item.i; f.style.background = "#dcfce7"; f.style.color = "#166534";
+                } else {
+                    lives--;
+                    f.innerHTML = "❌ " + item.i; f.style.background = "#fee2e2"; f.style.color = "#991b1b";
+                }
+                document.getElementById('xp').innerText = xp;
+                document.getElementById('lives').innerText = lives;
+                f.style.display = 'block';
+                document.getElementById('next-btn').style.display = 'block';
+                if(lives <= 0) endGame("GAME OVER");
+            };
+            optC.appendChild(b);
+        });
+    }
+
+    function handleNext() {
+        cur++;
+        if(cur < questions.length) render();
+        else endGame("GRADUADO");
+    }
+
+    function endGame(m) {
+        document.getElementById('quiz-box').innerHTML = `<h3>${m}</h3><p>XP: ${xp}</p><button class="btn" onclick="location.reload()">Reintentar</button>`;
+    }
+
+    render();
+</script>
+</body>
+</html>
